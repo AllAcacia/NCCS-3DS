@@ -42,16 +42,7 @@ int main(void)
     consoleSelect(&topScreen);
     printf("Opened example for NCCS!\n");
 
-    NetCORE_Init(EXAMPLE_APPID, EXAMPLE_USR);
-
-    // Testing checksum function
-    printf("Testing checksum function:\n");
-    u8 array1[20] = {0x45, 0x0, 0x0, 0x1e, 0x4, 0xd2, 0x0, 0x0, 0x40, 0x6, 0x0, 0x0, 0x12, 0x34, 0x56, 0x78, 0x98, 0x76, 0x54, 0x32};
-    u16 checksum1 = 0; // should turn out to be 8372
-    u8 array2[24] = {0x46, 0x0, 0x0, 0x1e, 0x16, 0x2e, 0x0, 0x0, 0x40, 0x6, 0xcc, 0x59, 0x66, 0x66, 0x44, 0x44, 0x98, 0x76, 0x54, 0x32, 0x0, 0x0, 0x0, 0x0};
-    u16 checksum2 = 0; // should turn out to be 0
-    NetCORE_Checksum(array1, sizeof(array1), &checksum1);
-    NetCORE_Checksum(array2, sizeof(array2), &checksum2);
+    NetCORE_Init(EXAMPLE_APPID, EXAMPLE_USR, 1); // desire only one other client
 
     while(aptMainLoop()) {
         // Scan all the inputs. This should be done once for each frame
