@@ -10,12 +10,16 @@
 #include "netCORE.h"
 
 
-static u32 NETCORE_RCVBUF[NETCORE_BUFFER_SIZE];
+static NCCS_Client NETCORE_CLIENTS[NETCORE_CLIENTS_MAX];
+static NCCS_SegmentSlot RECV_SLOTS[NETCORE_BUF_SEGMENTS_MAX];
+static bool NO_SLOTS_FREE = false;
+
 static u32 USR_WLANCOMM_ID = 0; // Unique User ID
 static u32 APPLICATION_ID = 0;  // Application ID
 
-static bool CONNECTED_TO_NETWORK = false;
-static u32 CONNECTED_NETWORK_ID = 0;
+static bool CONNECTED_TO_NETWORK = false; // are we in a network?
+static u32 CONNECTED_NETWORK_ID = 0;      // the currently connected-to network ID
+static u16 NETWORK_NODE_ID = 0;           // OUR node ID in the currently connected network
 
 
 int NetCORE_Init(u64 app_id, char* usr_str_utf8)
@@ -30,8 +34,6 @@ int NetCORE_Init(u64 app_id, char* usr_str_utf8)
 		return EXIT_FAILURE;
 	}
 	#endif
-
-	memset(NETCORE_RCVBUF, 0, NETCORE_BUFFER_SIZE*sizeof(NETCORE_RCVBUF[0]));
 
 	if (!NetCORE_CalculateWlanCommID()) {
 		return EXIT_FAILURE;
@@ -51,6 +53,12 @@ int NetCORE_Exit(void)
 }
 
 
+int NetCORE_Execute(void)
+{
+	return EXIT_SUCCESS;
+}
+
+
 int NetCORE_CalculateWlanCommID(void)
 {
 	// Calculate unique WLAN comm ID
@@ -64,10 +72,10 @@ int NetCORE_CalculateWlanCommID(void)
 		USR_WLANCOMM_ID |= ((console_hash & (1ULL << (i*2))) >> i);
 	}
 	if (!USR_WLANCOMM_ID) {
-		printf("Failed to calculate a unique, WLAN-ID (%lu).\n", USR_WLANCOMM_ID);
+		printf("Failed to calculate a unique WLAN-ID (%lu).\n", USR_WLANCOMM_ID);
 		return EXIT_FAILURE;
 	} else {
-		printf("Elected WLAN-ID is: %lu\n", USR_WLANCOMM_ID);
+		printf("Elected a unique WLAN-ID (%lu)\n", USR_WLANCOMM_ID);
 		return EXIT_SUCCESS;
 	}
 }

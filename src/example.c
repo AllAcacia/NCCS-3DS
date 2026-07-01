@@ -57,6 +57,9 @@ int main(void)
         // Scan all the inputs. This should be done once for each frame
 		hidScanInput();
 
+        // Run NetCORE loop functions
+        NetCORE_Execute();
+
 		// hidKeysDown returns information about which buttons have been just pressed (and they weren't in the previous frame)
 		u32 kDown = hidKeysDown();
 
