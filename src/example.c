@@ -25,8 +25,8 @@ typedef enum {
 
 int main(void)
 {
-    char* EXAMPLE_USR = "AllAcacia";
-    u64 EXAMPLE_APPID = 0x000000000ACA6400;
+    char* EXAMPLE_USR = "Barry.B";
+    u64 EXAMPLE_APPID = 0x000400000BEE2007;
 
     NW_State state = NW_UNCONNECTED;
     bool state_changed = true;
