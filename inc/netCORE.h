@@ -53,9 +53,8 @@ typedef enum {
 
 typedef struct {
     u16 slot_id;                       // segment slot ID
-    u16 nwn_id;                        // related network node ID
-    u8 seg_buf[UDS_DATAFRAME_MAXSIZE]; // segment buffer
     u16 seg_size;                      // segment size in bytes
+    u8 seg_buf[UDS_DATAFRAME_MAXSIZE]; // segment buffer
     NCCS_SegmentState seg_state;       // segment "state"
 } NCCS_SegmentSlot;
 
