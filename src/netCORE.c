@@ -14,6 +14,9 @@ static u32 NETCORE_RCVBUF[NETCORE_BUFFER_SIZE];
 static u32 USR_WLANCOMM_ID = 0; // Unique User ID
 static u32 APPLICATION_ID = 0;  // Application ID
 
+static bool CONNECTED_TO_NETWORK = false;
+static u32 CONNECTED_NETWORK_ID = 0;
+
 
 int NetCORE_Init(u64 app_id, char* usr_str_utf8)
 {
@@ -76,6 +79,51 @@ u32 NetCORE_GetWlanCommID(void)
 }
 
 
+int NetCORE_Checksum(const void* array, const size_t size, u16* checksum)
+{
+	// Case: empty array
+	if (size <= 0) {
+		printf("Checksum: empty segment\n");
+		return EXIT_FAILURE;
+	}
+	// Case: segment not multiple of 4
+	if (size % NETCORE_BYTES_PER_WORD != 0) {
+		printf("Checksum: size not multiple of 4\n");
+		return EXIT_FAILURE;
+	}
+
+	u64 temp = 0;
+
+	for (size_t i=0; i < size; i+=2) {
+		temp += (((u8*)array)[i] << 8) | ((u8*)array)[i+1];
+	}
+
+	while (temp > UINT16_MAX) {
+		u16 lowest16 = temp & 0xFFFF;
+		u64 carry = temp >> 16;
+		temp = lowest16 + carry;
+	}
+
+	temp = temp ^ 0xFFFF;
+	*checksum = temp;
+	printf("Checksum: %llu\n", temp);
+
+	return EXIT_SUCCESS;
+}
+
+
+bool NetCORE_GetIsInNetwork(void)
+{
+	return CONNECTED_TO_NETWORK;
+}
+
+
+u32 NetCORE_GetConnNetworkID(void)
+{
+	return CONNECTED_NETWORK_ID;
+}
+
+
 void NetCORE_Print_ConnStatus(void)
 {
 	Result ret=0;
@@ -101,7 +149,7 @@ void NetCORE_Print_ConnStatus(void)
 	}
 }
 
-
+/* ---------------- example from 3ds-examples ---------------- */
 void NetCORE_UDS_Test(void)
 {
 	Result ret=0;
