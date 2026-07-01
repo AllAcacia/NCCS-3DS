@@ -11,14 +11,17 @@
 
 
 static u32 NETCORE_RCVBUF[NETCORE_BUFFER_SIZE];
-static u32 USR_WLANCOMM_ID = 0; // Unique Comm ID
+static u32 USR_WLANCOMM_ID = 0; // Unique User ID
+static u32 APPLICATION_ID = 0;  // Application ID
 
 
-int NetCORE_Init(void)
+int NetCORE_Init(u64 app_id, char* usr_str_utf8)
 {
+	APPLICATION_ID = (u32)(app_id & 0x00000000FFFFFFFF);
+
 	#ifndef ENABLE_3DSLINKIO // 3dslink and udsInit have conflicts from testing
 	Result ret=0;
-	ret = udsInit(0x3000, GS_GetUsername_UTF8()); //The sharedmem size only needs to be slightly larger than the total recv_buffer_size for all binds, with page-alignment.
+	ret = udsInit(0x3000, usr_str_utf8); //The sharedmem size only needs to be slightly larger than the total recv_buffer_size for all binds, with page-alignment.
 	if (R_FAILED(ret)) {
 		printf("udsInit failed: 0x%08x.\n", (unsigned int)ret);
 		return EXIT_FAILURE;
@@ -51,14 +54,14 @@ int NetCORE_CalculateWlanCommID(void)
     u64 console_hash;
 
 	// We will get a u64 hash by stirring in our "app ID" (supposedly unique for every console)
-	CFGU_GenHashConsoleUnique((u32)(GS_GetApplicationID() & 0x00000000FFFFFFFF), &console_hash);
+	CFGU_GenHashConsoleUnique(APPLICATION_ID, &console_hash);
 
 	// Take every even order bit, and squash it into a u32 Wlan ID
 	for (size_t i=0; i < 32; i += 1) {
 		USR_WLANCOMM_ID |= ((console_hash & (1ULL << (i*2))) >> i);
 	}
 	if (!USR_WLANCOMM_ID) {
-		printf("Failed to calculate a unique, WLAN-ID.\n");
+		printf("Failed to calculate a unique, WLAN-ID (%lu).\n", USR_WLANCOMM_ID);
 		return EXIT_FAILURE;
 	} else {
 		printf("Elected WLAN-ID is: %lu\n", USR_WLANCOMM_ID);

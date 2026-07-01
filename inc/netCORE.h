@@ -16,11 +16,10 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <3ds.h>
-#include "gamestate.h"
 
 #define NETCORE_BUFFER_SIZE UDS_DATAFRAME_MAXSIZE
 
-int NetCORE_Init(void);
+int NetCORE_Init(u64 app_id, char* usr_str_utf8);
 
 int NetCORE_Exit(void);
 

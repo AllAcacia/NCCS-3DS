@@ -34,12 +34,12 @@ include $(DEVKITARM)/3ds_rules
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src
-DATA		:=	data
+# DATA		:=	data
 INCLUDES	:=	inc
-GRAPHICS	:=	assets
+# GRAPHICS	:=	assets
 # GFXBUILD	:=	$(BUILD)
-ROMFS		:=	romfs
-GFXBUILD	:=	$(ROMFS)/gfx
+# ROMFS		:=	romfs
+# GFXBUILD	:=	$(ROMFS)/gfx
 
 APP_TITLE := NCCS-3DS
 APP_DESCRIPTION := 3DS Reliable Network Service
