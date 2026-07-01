@@ -65,6 +65,7 @@ typedef struct {
     NCCS_ConnState conn_state;
     NCCS_SegmentSlot seg_slots[NETCORE_BUF_SEGMENTS_MAX];
     NCCS_SegmentSlot* curr_slot; // to support in-order data scheme, set to NULL if nothing available
+    u16 node_id;
     u16 usr_utf16[11]; // UTF-16 encoded username
     u8 usr_utf8[11]; // UTF-8 encoded username
     u64 tsecr; // their clock timestamp (TS echo reply)
