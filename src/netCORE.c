@@ -9,16 +9,15 @@
 
 #include "netCORE.h"
 
-static NCCS_Client* NETCORE_CLIENTS;
-static NCCS_SegmentSlot RECV_SLOTS[NETCORE_BUF_SEGMENTS_MAX];
-static bool NO_RECV_SLOTS_FREE = false;
+static NCCS_NetworkPeer* NETCORE_CLIENTS; // pointer to dynamically allocated space for peer data
+static u8 NCCS_MAIN_RCVBUF[NCCS_MAIN_RCVBUF_BUFSIZE_MAX]; // intermediate receiving buffer, memcpy'd into peer data buffer after
 
 static u32 USR_WLANCOMM_ID = 0; // Unique User ID
 static u32 APPLICATION_ID = 0;  // Application ID
 
 static bool CONNECTED_TO_NETWORK = false; // are we in a network?
-static u32 CONNECTED_NETWORK_ID = 0;      // the currently connected-to network ID
-static u16 NETWORK_NODE_ID = 0;           // OUR node ID in the currently connected network
+static udsNetworkStruct NETWORK_DATA;     // UDS network struct
+static u16 NETWORK_NODE_ID = 0;           // OUR node ID in the currently connected network, init 0
 static u8 SESSION_CLIENTS_MAX = 0;        // how many nodes do we want to support? Kick out any extra ones
 
 
@@ -39,11 +38,11 @@ int NetCORE_Init(u64 app_id, char* usr_str_utf8, u8 max_clients)
 		return EXIT_FAILURE;
 	}
 
-	if (max_clients > NETCORE_CLIENTS_MAX) {
+	if (max_clients > NCCS_CLIENTS_MAX) {
 		return EXIT_FAILURE;
 	}
 	SESSION_CLIENTS_MAX = max_clients;
-	NETCORE_CLIENTS = calloc(SESSION_CLIENTS_MAX, sizeof(NCCS_Client));
+	NETCORE_CLIENTS = calloc(SESSION_CLIENTS_MAX, sizeof(NCCS_NetworkPeer));
 
 	printf("Initialised NetCORE\n");
 
@@ -157,7 +156,7 @@ int NCCS_SetBE1b(void* segment, size_t byte_offset, u8 bit_n, u8 val)
 
 u16 NCCS_GetBE16b(const void* segment, size_t offset)
 {
-	u8* bytes = segment;
+	const u8* bytes = segment;
 	return (bytes[offset] << 8) | bytes[offset+1];
 }
 
@@ -171,7 +170,7 @@ void NCCS_SetBE16b(void* segment, size_t offset, u16 val)
 
 u32 NCCS_GetBE32b(const void* segment, size_t offset)
 {
-	u8* bytes = segment;
+	const u8* bytes = segment;
 	return (bytes[offset] << 24) | (bytes[offset+1] << 16) | (bytes[offset+2] << 8) | bytes[offset+3];
 }
 
@@ -185,7 +184,7 @@ void NCCS_SetBE32b(void* segment, size_t offset, u32 val)
 }
 
 
-u32 NCCS_GetAppID(void* segment)
+u32 NCCS_GetAppID(const void* segment)
 {
 	return NCCS_GetBE32b(segment, NCCS_APPID_BYTE_OFFSET);
 }
@@ -197,7 +196,7 @@ void NCCS_SetAppID(void* segment, u32 app_id)
 }
 
 
-u16 NCCS_GetSrceNWNID(void* segment)
+u16 NCCS_GetSrceNWNID(const void* segment)
 {
 	return NCCS_GetBE16b(segment, NCCS_SRCENWNID_BYTE_OFFSET);
 }
@@ -209,7 +208,7 @@ void NCCS_SetSrceNWNID(void* segment, u16 srce_nwnid)
 }
 
 
-u16 NCCS_GetDestNWNID(void* segment)
+u16 NCCS_GetDestNWNID(const void* segment)
 {
 	return NCCS_GetBE16b(segment, NCCS_DESTNWNID_BYTE_OFFSET);
 }
@@ -221,7 +220,7 @@ void NCCS_SetDestNWNID(void* segment, u16 dest_nwnid)
 }
 
 
-u32 NCCS_GetSrceWLANID(void* segment)
+u32 NCCS_GetSrceWLANID(const void* segment)
 {
 	return NCCS_GetBE32b(segment, NCCS_SRCEWLANID_BYTE_OFFSET);
 }
@@ -233,7 +232,7 @@ void NCCS_SetSrceWLANID(void* segment, u32 srce_wlanid)
 }
 
 
-u32 NCCS_GetDestWLANID(void* segment)
+u32 NCCS_GetDestWLANID(const void* segment)
 {
 	return NCCS_GetBE32b(segment, NCCS_DESTWLANID_BYTE_OFFSET);
 }
@@ -245,7 +244,7 @@ void NCCS_SetDestWLANID(void* segment, u32 dest_wlanid)
 }
 
 
-u32 NCCS_GetSeqno(void* segment)
+u32 NCCS_GetSeqno(const void* segment)
 {
 	return NCCS_GetBE32b(segment, NCCS_SEQNO_BYTE_OFFSET);
 }
@@ -257,7 +256,7 @@ void NCCS_SetSeqno(void* segment, u32 seqno)
 }
 
 
-u32 NCCS_GetAckno(void* segment)
+u32 NCCS_GetAckno(const void* segment)
 {
 	return NCCS_GetBE32b(segment, NCCS_ACKNO_BYTE_OFFSET);
 }
@@ -269,7 +268,7 @@ void NCCS_SetAckno(void* segment, u32 ackno)
 }
 
 
-u16 NCCS_GetAppMsgType(void* segment)
+u16 NCCS_GetAppMsgType(const void* segment)
 {
 	return NCCS_GetBE16b(segment, NCCS_APPMSGTYPE_BYTE_OFFSET);
 }
@@ -281,7 +280,7 @@ void NCCS_SetAppMsgType(void* segment, u16 appmsgtype)
 }
 
 
-u8 NCCS_GetSynFlag(void* segment)
+u8 NCCS_GetSynFlag(const void* segment)
 {
 	return NCCS_GetBE1b(segment, NCCS_SYNFLAG_BYTE_OFFSET, NCCS_SYNFLAG_BIT_N);
 }
@@ -293,7 +292,7 @@ void NCCS_SetSynFlag(void* segment, u8 syn)
 }
 
 
-u8 NCCS_GetAckFlag(void* segment)
+u8 NCCS_GetAckFlag(const void* segment)
 {
 	return NCCS_GetBE1b(segment, NCCS_ACKFLAG_BYTE_OFFSET, NCCS_ACKFLAG_BIT_N);
 }
@@ -305,7 +304,7 @@ void NCCS_SetAckFlag(void* segment, u8 ack)
 }
 
 
-u8 NCCS_GetNakFlag(void* segment)
+u8 NCCS_GetNakFlag(const void* segment)
 {
 	return NCCS_GetBE1b(segment, NCCS_NAKFLAG_BYTE_OFFSET, NCCS_NAKFLAG_BIT_N);
 }
@@ -317,7 +316,7 @@ void NCCS_SetNakFlag(void* segment, u8 nak)
 }
 
 
-u8 NCCS_GetFinFlag(void* segment)
+u8 NCCS_GetFinFlag(const void* segment)
 {
 	return NCCS_GetBE1b(segment, NCCS_FINFLAG_BYTE_OFFSET, NCCS_FINFLAG_BIT_N);
 }
@@ -329,7 +328,7 @@ void NCCS_SetFinFlag(void* segment, u8 fin)
 }
 
 
-u16 NCCS_GetPayloadLen(void* segment)
+u16 NCCS_GetPayloadLen(const void* segment)
 {
 	return NCCS_GetBE16b(segment, NCCS_PAYLOADLEN_BYTE_OFFSET);
 }
@@ -341,7 +340,7 @@ void NCCS_SetPayloadLen(void* segment, u16 payload_len)
 }
 
 
-u16 NCCS_GetChecksum(void* segment)
+u16 NCCS_GetChecksum(const void* segment)
 {
 	return NCCS_GetBE16b(segment, NCCS_CHECKSUM_BYTE_OFFSET);
 }
@@ -361,7 +360,13 @@ bool NetCORE_GetIsInNetwork(void)
 
 u32 NetCORE_GetConnNetworkID(void)
 {
-	return CONNECTED_NETWORK_ID;
+	return NETWORK_DATA.networkID;
+}
+
+
+u16 NetCORE_GetConnNodeID(void)
+{
+	return NETWORK_NODE_ID;
 }
 
 

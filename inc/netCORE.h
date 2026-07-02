@@ -17,10 +17,11 @@
 #include <unistd.h>
 #include <3ds.h>
 
-// Constant NetCORE Macros
-#define NETCORE_CLIENTS_MAX 15     // UDS supports 16 total "nodes" in a network.
-#define NETCORE_BUF_SEGMENTS_MAX 8 // how many segments can be "buffered" for storage
-#define NETCORE_RCVBUF_SIZE (UDS_DATAFRAME_MAXSIZE * NETCORE_BUF_SEGMENTS_MAX)    // in bytes
+// Constant NCCS Macros
+#define NCCS_CLIENTS_MAX 15     // UDS supports 16 total "nodes" in a network.
+#define NCCS_MAIN_RCVBUF_BUFSIZE_MAX UDS_DATAFRAME_MAXSIZE
+#define NCCS_SNDBUF_SEG_MAX 16
+#define NCCS_RCVBUF_SEG_MAX 16
 
 /*
                     NCCS Common Network Header
@@ -91,35 +92,46 @@ typedef enum {
 
 
 typedef enum {
-    SEG_INIT=0, // for sender use typically
-    SEG_RCVD,
-    SEG_RCVD_ACKD,
-    SEG_SENT,
-    SEG_SENT_ACKD
-} NCCS_SegmentState;
+    SLOT_NOTUSED=0,   // free to use
+    SLOT_UNSENT,      // 
+    SLOT_SENT_UNACKD,
+    SLOT_RCVD_UNREAD,
+} NCCS_SlotState;
 
 
 typedef struct {
     u16 slot_id;                       // segment slot ID
     u16 seg_size;                      // segment size in bytes
     u8 seg_buf[UDS_DATAFRAME_MAXSIZE]; // segment buffer
-    NCCS_SegmentState seg_state;       // segment "state"
+    NCCS_SlotState slot_state;         // segment "state"
 } NCCS_SegmentSlot;
 
 
 typedef struct {
-    bool need_sending;
+    bool ready_to_send; // flag to indicate data needs sending
     NCCS_ConnState conn_state;
-    NCCS_SegmentSlot seg_slots[NETCORE_BUF_SEGMENTS_MAX];
-    NCCS_SegmentSlot* curr_slot; // to support in-order data scheme, set to NULL if nothing available
+
     u32 comm_id;       // WLAN CommID is determined on a per-console basis to be unique
     u16 node_id;       // NodeID is determined through the network
+    
     u16 usr_utf16[11]; // UTF-16 encoded username
     u8 usr_utf8[11]; // UTF-8 encoded username
-    u64 tsecr; // their clock timestamp (TS echo reply)
-    u32 exp_seqno; // expected sequence number
-    u32 exp_ackno; // expected acknowledgement number
-} NCCS_Client;
+
+    NCCS_SegmentSlot snd_slots[NCCS_SNDBUF_SEG_MAX];
+    NCCS_SegmentSlot rcv_slots[NCCS_RCVBUF_SEG_MAX];
+    NCCS_SegmentSlot* curr_rcv_slot; // to support in-order data scheme, set to NULL if nothing available
+    
+    u32 snd_una;      // number of next seqno that is sent but not ack'd
+    u32 snd_nxt;      // number of next seqno to send
+    u32 rcv_nxt;      // number of next seqno to receive
+    u32 rcv_read_nxt; // number of next seqno to read from app layer, assumes they are read quicker than received
+
+    u16 snd_slot_nxt; // next available sending slot index
+    u16 rcv_slot_nxt; // next available receiving slot index
+
+    u16 snd_wnd; // sending window size
+    u16 rcv_wnd; // sending window size
+} NCCS_NetworkPeer;
 
 
 int NetCORE_Init(u64 app_id, char* usr_str_utf8, u8 max_clients);
@@ -146,65 +158,67 @@ u32 NCCS_GetBE32b(const void* segment, size_t offset);
 
 void NCCS_SetBE32b(void* segment, size_t offset, u32 val);
 
-u32 NCCS_GetAppID(void* segment);
+u32 NCCS_GetAppID(const void* segment);
 
 void NCCS_SetAppID(void* segment, u32 app_id);
 
-u16 NCCS_GetSrceNWNID(void* segment);
+u16 NCCS_GetSrceNWNID(const void* segment);
 
 void NCCS_SetSrceNWNID(void* segment, u16 srce_nwnid);
 
-u16 NCCS_GetDestNWNID(void* segment);
+u16 NCCS_GetDestNWNID(const void* segment);
 
 void NCCS_SetDestNWNID(void* segment, u16 dest_nwnid);
 
-u32 NCCS_GetSrceWLANID(void* segment);
+u32 NCCS_GetSrceWLANID(const void* segment);
 
 void NCCS_SetSrceWLANID(void* segment, u32 srce_wlanid);
 
-u32 NCCS_GetDestWLANID(void* segment);
+u32 NCCS_GetDestWLANID(const void* segment);
 
 void NCCS_SetDestWLANID(void* segment, u32 dest_wlanid);
 
-u32 NCCS_GetSeqno(void* segment);
+u32 NCCS_GetSeqno(const void* segment);
 
 void NCCS_SetSeqno(void* segment, u32 seqno);
 
-u32 NCCS_GetAckno(void* segment);
+u32 NCCS_GetAckno(const void* segment);
 
 void NCCS_SetAckno(void* segment, u32 ackno);
 
-u16 NCCS_GetAppMsgType(void* segment);
+u16 NCCS_GetAppMsgType(const void* segment);
 
 void NCCS_SetAppMsgType(void* segment, u16 appmsgtype);
 
-u8 NCCS_GetSynFlag(void* segment);
+u8 NCCS_GetSynFlag(const void* segment);
 
 void NCCS_SetSynFlag(void* segment, u8 syn);
 
-u8 NCCS_GetAckFlag(void* segment);
+u8 NCCS_GetAckFlag(const void* segment);
 
 void NCCS_SetAckFlag(void* segment, u8 ack);
 
-u8 NCCS_GetNakFlag(void* segment);
+u8 NCCS_GetNakFlag(const void* segment);
 
 void NCCS_SetNakFlag(void* segment, u8 nak);
 
-u8 NCCS_GetFinFlag(void* segment);
+u8 NCCS_GetFinFlag(const void* segment);
 
 void NCCS_SetFinFlag(void* segment, u8 fin);
 
-u16 NCCS_GetPayloadLen(void* segment);
+u16 NCCS_GetPayloadLen(const void* segment);
 
 void NCCS_SetPayloadLen(void* segment, u16 payload_len);
 
-u16 NCCS_GetChecksum(void* segment);
+u16 NCCS_GetChecksum(const void* segment);
 
 void NCCS_SetChecksum(void* segment, u16 checksum);
 
 bool NetCORE_GetIsInNetwork(void);
 
 u32 NetCORE_GetConnNetworkID(void);
+
+u16 NetCORE_GetConnNodeID(void);
 
 void NetCORE_Print_ConnStatus(void);
 
