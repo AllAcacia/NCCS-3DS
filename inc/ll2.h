@@ -6,20 +6,34 @@
  * Implements a doubly linked list,
  * to allow the maintenance of order
  * without moving anything at all!
+ * "I will have order!" - Zhongli
  */
 
 #include <stdint.h>
 #include <stdlimits.h>
 
-#define DEQUE_MAX_NODES UINT32_MAX
+#define DEQUE_MAX_NODES UINT32_MAX+1
+
+#ifndef s32
+#define s32 int32_t
+#endif//s32, I do not want to import the entire 3ds.h library for this
 
 #ifndef u32
 #define u32 uint32_t
 #endif//u32, I do not want to import the entire 3ds.h library for this
 
+#ifndef s64
+#define s64 int64_t
+#endif//s64, I do not want to import the entire 3ds.h library for this
+
+#ifndef u64
+#define u64 uint64_t
+#endif//u64, I do not want to import the entire 3ds.h library for this
+
 
 typedef struct {
     void* n_item;
+    u32 n_id
     u32 n_next;
     u32 n_prev;
 } LL2_Node;
@@ -48,6 +62,12 @@ void* LL2_Deque_DequeueL(LL2_Deque* deque);
 
 void* LL2_Deque_DequeueR(LL2_Deque* deque);
 
-int LL2_Deque_Insert(LL2_Deque* deque, void* value);
+int LL2_Deque_InsertAt(LL2_Deque* deque, void* value);
+
+int LL2_Deque_InsertInOrder(LL2_Deque* deque, void* value);
+
+s64 LL2_Deque_IndexFromValue(LL2_Deque* deque, void* value);
+
+s64 LL2_Deque_ValueFromIndex(LL2_Deque* deque, u32 index);
 
 int LL2_Deque_Remove(LL2_Deque* deque, void* value);
