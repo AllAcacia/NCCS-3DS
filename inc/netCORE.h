@@ -17,11 +17,10 @@
 #include <unistd.h>
 #include <3ds.h>
 
-// Constant NCCS Macros
+/* -------- Constant NCCS Macros -------- */
 #define NCCS_CLIENTS_MAX 15     // UDS supports 16 total "nodes" in a network.
 #define NCCS_MAIN_RCVBUF_BUFSIZE_MAX UDS_DATAFRAME_MAXSIZE
-#define NCCS_SNDBUF_SEG_MAX 16
-#define NCCS_RCVBUF_SEG_MAX 16
+#define NCCS_WINDOW_SEG_MAX 16
 
 /*
                     NCCS Common Network Header
@@ -50,7 +49,8 @@
 :                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
-// NCCS Header Macros
+
+/* -------- NCCS Header Macros -------- */
 #define NCCS_BYTES_PER_WORD 4
 #define NCCS_HDR_NUM_WORDS 8
 #define NCCS_HDR_LEN (NCCS_BYTES_PER_WORD * NCCS_HDR_NUM_WORDS)  // in bytes
@@ -76,6 +76,56 @@
 #define NCCS_CHECKSUM_BYTE_OFFSET 30
 
 
+/* -------- NCCS RX -------- */
+typedef enum {
+    RX_EMPTY=0,
+    RX_RECEIVED,
+    RX_DELIVERED
+} NCCS_RxState;
+
+
+typedef struct {
+    u16 seg_size;                      // segment size in bytes, per packet pull function
+    u32 seqno;                         // sequence number
+    u8 seg_buf[UDS_DATAFRAME_MAXSIZE]; // segment buffer
+    NCCS_RxState state;                // segment "state"
+} NCCS_RxWindowSlot;
+
+
+typedef struct {
+    u32 rx_base_seqno;
+    u32 rx_expected_seqno;
+    NCCS_RxWindowSlot rx_window[NCCS_WINDOW_SEG_MAX];
+} NCCS_RxSlidingWindow;
+
+
+/* -------- NCCS TX -------- */
+typedef enum {
+    TX_FREE=0,
+    TX_SENT,
+    TX_ACKED
+} NCCS_TxState;
+
+
+typedef struct {
+    u16 seg_size;                      // segment size in bytes, per packet pull function
+    u32 seqno;                         // sequence number
+    u8 seg_buf[UDS_DATAFRAME_MAXSIZE]; // segment buffer
+    NCCS_TxState state;                // segment "state"
+
+    u8 retries;
+    u64 timestamp;
+} NCCS_TxWindowSlot;
+
+
+typedef struct {
+    u32 tx_base_seqno;
+    u32 tx_next_seqno;
+    NCCS_TxWindowSlot tx_window[NCCS_WINDOW_SEG_MAX];
+} NCCS_TxSlidingWindow;
+
+
+/* -------- NCCS Peer -------- */
 typedef enum {
     CONN_CLOSED=0,    // initial
     CONN_LISTEN,      // passive open state
@@ -91,22 +141,6 @@ typedef enum {
 } NCCS_ConnState; // Taken from TCP state machine
 
 
-typedef enum {
-    SLOT_NOTUSED=0,   // free to use
-    SLOT_UNSENT,      // 
-    SLOT_SENT_UNACKD,
-    SLOT_RCVD_UNREAD,
-} NCCS_SlotState;
-
-
-typedef struct {
-    u16 slot_id;                       // segment slot ID
-    u16 seg_size;                      // segment size in bytes
-    u8 seg_buf[UDS_DATAFRAME_MAXSIZE]; // segment buffer
-    NCCS_SlotState slot_state;         // segment "state"
-} NCCS_SegmentSlot;
-
-
 typedef struct {
     bool ready_to_send; // flag to indicate data needs sending
     NCCS_ConnState conn_state;
@@ -117,22 +151,12 @@ typedef struct {
     u16 usr_utf16[11]; // UTF-16 encoded username
     u8 usr_utf8[11]; // UTF-8 encoded username
 
-    NCCS_SegmentSlot snd_slots[NCCS_SNDBUF_SEG_MAX];
-    NCCS_SegmentSlot rcv_slots[NCCS_RCVBUF_SEG_MAX];
-    NCCS_SegmentSlot* curr_rcv_slot; // to support in-order data scheme, set to NULL if nothing available
-    
-    u32 snd_una;      // number of next seqno that is sent but not ack'd
-    u32 snd_nxt;      // number of next seqno to send
-    u32 rcv_nxt;      // number of next seqno to receive
-    u32 rcv_read_nxt; // number of next seqno to read from app layer, assumes they are read quicker than received
-
-    u16 snd_slot_nxt; // next available sending slot index
-    u16 rcv_slot_nxt; // next available receiving slot index
-
-    u16 snd_wnd; // sending window size
-    u16 rcv_wnd; // sending window size
+    NCCS_TxSlidingWindow tx_slots;
+    NCCS_RxSlidingWindow rx_slots;
 } NCCS_NetworkPeer;
 
+
+/* -------- Functions -------- */
 
 int NetCORE_Init(u64 app_id, char* usr_str_utf8, u8 max_clients);
 

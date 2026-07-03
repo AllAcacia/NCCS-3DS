@@ -76,7 +76,7 @@ int NetCORE_CalculateWlanCommID(void)
 	for (size_t i=0; i < 32; i += 1) {
 		USR_WLANCOMM_ID |= ((console_hash & (1ULL << (i*2))) >> i);
 	}
-	if (!USR_WLANCOMM_ID) {
+	if (USR_WLANCOMM_ID == 0) {
 		printf("Failed to calculate a unique WLAN-ID (%lu).\n", USR_WLANCOMM_ID);
 		return EXIT_FAILURE;
 	} else {
