@@ -92,6 +92,30 @@ u32 NetCORE_GetWlanCommID(void)
 }
 
 
+s16 NCCS_CalcWindowIndex(u32 query_seqno, u32 base_seqno, u8 base_index, u8 window_size)
+{
+	// WARNING: does not handle seqnos that have looped from integer overflow
+
+	if (window_size == 0) return -3; // cannot divide by 0
+	if (query_seqno < base_seqno) return -2; // duplicate segment, send ACK
+	if ((base_seqno + window_size) <= query_seqno) return -1; // reject sequence number
+
+	return (s16)((base_index + (query_seqno - base_seqno)) % window_size);
+}
+
+
+s16 NCCS_CalcRxWindowIndex(NCCS_RxSlidingWindow* window, u32 query_seqno)
+{
+	return NCCS_CalcWindowIndex(query_seqno, window->rx_base_seqno, window->rx_base_index, window->rx_size);
+}
+
+
+s16 NCCS_CalcTxWindowIndex(NCCS_TxSlidingWindow* window, u32 query_seqno)
+{
+	return NCCS_CalcWindowIndex(query_seqno, window->tx_base_seqno, window->tx_base_index, window->tx_size);
+}
+
+
 int NCCS_CalcChecksum(const void* segment, size_t seg_size, u16* checksum)
 {
 	// Case: segment size in memory is less than advertised

@@ -93,7 +93,9 @@ typedef struct {
 
 
 typedef struct {
-    u32 rx_base_seqno;
+    u8 rx_size;
+    u8 rx_base_index;  // index to first item in sliding window
+    u32 rx_base_seqno; // current lowest seqno in sliding window
     u32 rx_expected_seqno;
     NCCS_RxWindowSlot rx_window[NCCS_WINDOW_SEG_MAX];
 } NCCS_RxSlidingWindow;
@@ -119,7 +121,9 @@ typedef struct {
 
 
 typedef struct {
-    u32 tx_base_seqno;
+    u8 tx_size;
+    u8 tx_base_index;  // index to first item in sliding window
+    u32 tx_base_seqno; // current lowest seqno in sliding window
     u32 tx_next_seqno;
     NCCS_TxWindowSlot tx_window[NCCS_WINDOW_SEG_MAX];
 } NCCS_TxSlidingWindow;
@@ -167,6 +171,12 @@ int NetCORE_Execute(void);
 int NetCORE_CalculateWlanCommID(void);
 
 u32 NetCORE_GetWlanCommID(void);
+
+s16 NCCS_CalcWindowIndex(u32 query_seqno, u32 base_seqno, u8 base_index, u8 window_size);
+
+s16 NCCS_CalcRxWindowIndex(NCCS_RxSlidingWindow* window, u32 query_seqno);
+
+s16 NCCS_CalcTxWindowIndex(NCCS_TxSlidingWindow* window, u32 query_seqno);
 
 int NCCS_CalcChecksum(const void* segment, size_t seg_size, u16* checksum);
 
