@@ -52,3 +52,4 @@
 *.t3x
 *.ogg
 /build/
+/build-tests/

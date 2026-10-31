@@ -15,6 +15,8 @@
 #define BUTTON_SEARCHNETWORK KEY_X
 #define BUTTON_CREATENETWORK KEY_Y
 
+u32 chosen_seqno = 0;
+
 
 typedef enum {
     NW_UNCONNECTED=0,
@@ -53,6 +55,13 @@ int main(void)
 
 		// hidKeysDown returns information about which buttons have been just pressed (and they weren't in the previous frame)
 		u32 kDown = hidKeysDown();
+        if (kDown & KEY_DUP) {
+            chosen_seqno += 1;
+            printf("Seqno incremented to %lu\n", chosen_seqno);
+        } else if (kDown & KEY_DDOWN) {
+            chosen_seqno -= 1;
+            printf("Seqno decremented to %lu\n", chosen_seqno);
+        }
 
         switch (state) {
             case NW_UNCONNECTED:
