@@ -11,6 +11,7 @@
 #ifndef NCCS_PORT_H
 #define NCCS_PORT_H
 
+#include <stddef.h>
 #include "nccs.h"
 
 s16 NCCS_Init_Port(size_t sharedmem_size, const char* username);
