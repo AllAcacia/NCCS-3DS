@@ -27,8 +27,7 @@ int NetCORE_Init(u64 app_id, char* usr_str_utf8, u8 max_clients)
 {
 	APPLICATION_ID = (u32)(app_id & 0x00000000FFFFFFFF);
 
-	s16 ret=0;
-	ret = NCCS_Init(0x3000, usr_str_utf8); //The sharedmem size only needs to be slightly larger than the total recv_buffer_size for all binds, with page-alignment.
+	s16 ret = NCCS_Init(0x3000, usr_str_utf8); //The sharedmem size only needs to be slightly larger than the total recv_buffer_size for all binds, with page-alignment.
 
 	if (!NetCORE_CalculateWlanCommID()) {
 		return EXIT_FAILURE;
@@ -42,7 +41,7 @@ int NetCORE_Init(u64 app_id, char* usr_str_utf8, u8 max_clients)
 
 	printf("Initialised NetCORE\n");
 
-	return EXIT_SUCCESS;
+	return ret;
 }
 
 

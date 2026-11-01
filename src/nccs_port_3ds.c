@@ -14,7 +14,7 @@
 
 s16 NCCS_Init_Port(size_t sharedmem_size, const char* username)
 {
-    udsInit(sharedmem_size, username);
+    return (s16)udsInit(sharedmem_size, username);
 }
 
 
@@ -26,5 +26,5 @@ void NCCS_Exit_Port(void)
 
 s16 NetCORE_GenHashConsoleUnique(u32 appIDSalt, u64 *hash)
 {
-    return CFGU_GenHashConsoleUnique(appIDSalt, hash);
+    return (s16)CFGU_GenHashConsoleUnique(appIDSalt, hash);
 }

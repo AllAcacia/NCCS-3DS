@@ -8,6 +8,10 @@
  */
 
 
+#ifndef NETCORE_H
+#define NETCORE_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,3 +44,5 @@ u32 NetCORE_GetConnNetworkID(void);
 u16 NetCORE_GetConnNodeID(void);
 
 void NetCORE_Print_ConnStatus(void);
+
+#endif // NETCORE_H

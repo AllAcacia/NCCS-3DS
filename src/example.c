@@ -3,11 +3,11 @@
  * Author:   AllAcacia
  */
 
-#include "netCORE.h"
 #include <3ds.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "netCORE.h" // include after 3ds.h!
 
 
 #define BUTTON_SENDSEGMENT KEY_A
@@ -18,19 +18,12 @@
 u32 chosen_seqno = 0;
 
 
-typedef enum {
-    NW_DISCONNECTED=0,
-    NW_ISCONNECTED,
-    NW_SEARCHING
-} NW_State;
-
-
 int main(void)
 {
     char* EXAMPLE_USR = "Barry.B";
     u64 EXAMPLE_APPID = 0x000400000BEE2007;
 
-    NW_State state = NW_UNCONNECTED;
+    NCCS_NetworkState state = NW_DISCONNECTED;
     bool state_changed = true;
     bool network_owner = false;
 
@@ -64,7 +57,7 @@ int main(void)
         }
 
         switch (state) {
-            case NW_UNCONNECTED:
+            case NW_DISCONNECTED:
                 if (state_changed) {
                     printf("\nNot connected to a network...\n");
                     printf("Press X to search for networks\n");
@@ -101,7 +94,7 @@ int main(void)
                         printf("Exiting network...\n");
                     }
                     network_owner = false;
-                    state = NW_UNCONNECTED;
+                    state = NW_DISCONNECTED;
                     state_changed = true;
                 }
                 break;
@@ -116,7 +109,7 @@ int main(void)
                     printf("Connected to network %lu!\n", NetCORE_GetConnNetworkID());
                     state = NW_ISCONNECTED;
                 } else if (kDown & BUTTON_CLOSENETWORK) {
-                    state = NW_UNCONNECTED;
+                    state = NW_DISCONNECTED;
                     state_changed = true;
                 }
                 break;

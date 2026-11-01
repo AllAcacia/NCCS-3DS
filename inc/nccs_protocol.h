@@ -7,9 +7,14 @@
  * for NCCS.
  */
 
+
+#ifndef NCCS_PROTOCOL_H
+#define NCCS_PROTOCOL_H
+
 #include <stdbool.h>
 #include "nccs.h"
 #include "nccs_port.h"
+
 
 /*
                     NCCS Common Network Header
@@ -191,6 +196,18 @@ s16 NCCS_Init(size_t sharedmem_size, const char* username);
 
 void NCCS_Exit(void);
 
+u8 NCCS_GetBE1b(const void* segment, size_t byte_offset, u8 bit_n);
+
+int NCCS_SetBE1b(void* segment, size_t byte_offset, u8 bit_n, u8 val);
+
+u16 NCCS_GetBE16b(const void* segment, size_t offset);
+
+void NCCS_SetBE16b(void* segment, size_t offset, u16 val);
+
+u32 NCCS_GetBE32b(const void* segment, size_t offset);
+
+void NCCS_SetBE32b(void* segment, size_t offset, u32 val);
+
 s16 NCCS_CalcWindowIndex(u32 query_seqno, u32 base_seqno, u8 base_index, u8 window_size);
 
 s16 NCCS_CalcRxWindowIndex(NCCS_RxSlidingWindow* window, u32 query_seqno);
@@ -254,3 +271,5 @@ void NCCS_SetPayloadLen(void* segment, u16 payload_len);
 u16 NCCS_GetChecksum(const void* segment);
 
 void NCCS_SetChecksum(void* segment, u16 checksum);
+
+#endif // NCCS_PROTOCOL_H

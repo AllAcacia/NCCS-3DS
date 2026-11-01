@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "nccs.h"
 #include "nccs_protocol.h"
 
 
@@ -12,6 +13,8 @@ s16 NCCS_Init(size_t sharedmem_size, const char* username)
 {
 	memset(peer_prof, 0, sizeof(NCCS_ClientProfile)*NCCS_CLIENTS_MAX);
 	NCCS_Init_Port(sharedmem_size, username);
+
+	return EXIT_SUCCESS;
 }
 
 
