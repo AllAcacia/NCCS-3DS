@@ -19,7 +19,7 @@ u32 chosen_seqno = 0;
 
 
 typedef enum {
-    NW_UNCONNECTED=0,
+    NW_DISCONNECTED=0,
     NW_ISCONNECTED,
     NW_SEARCHING
 } NW_State;

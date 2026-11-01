@@ -15,13 +15,14 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
-#include <3ds.h>
+#include <stdbool.h>
 
+#include "nccs.h"
+#include "nccs_port.h"
 #include "nccs_protocol.h"
 
 
-/* -------- Functions -------- */
-
+/* -------- Main NetCORE Functions -------- */
 int NetCORE_Init(u64 app_id, char* usr_str_utf8, u8 max_clients);
 
 int NetCORE_Exit(void);

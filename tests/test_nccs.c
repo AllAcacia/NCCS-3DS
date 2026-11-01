@@ -1,25 +1,28 @@
 #include "unity.h"
 #include "nccs_protocol.h"
+#include <string.h>
+
+
+char* sample_usr = "AllAcacia";
 
 
 void setUp(void)
 {
-    return;
+    s16 res = NCCS_Init(0x3000, sample_usr);
 }
 
 
 void tearDown(void)
 {
-    return;
+    NCCS_Exit();
 }
 
 
-// Basic test implementation
-void test_basic(void)
+// TESTS
+void test_barebasics(void)
 {
     int result = 1;
-    printf("Success!\n");
-    TEST_ASSERT_EQUAL(1, result);
+    TEST_ASSERT_EQUAL_MESSAGE(1, result, "CMake and Unity testing is up!\n");
 }
 
 
@@ -27,7 +30,7 @@ int main(void)
 {
     UNITY_BEGIN();
 
-    RUN_TEST(test_basic);
+    RUN_TEST(test_barebasics);
 
     return UNITY_END();
 }

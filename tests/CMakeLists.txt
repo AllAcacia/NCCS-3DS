@@ -19,9 +19,17 @@ target_include_directories(unity PUBLIC
     unity/src
 )
 
+# Platform-independent production sources
+set(NCCS_SOURCES
+    nccs_port_win.c
+    ../src/nccs_protocol.c
+    ../src/netCORE.c
+)
+
 # Test executable
 add_executable(nccs_tests
     test_nccs.c
+    ${NCCS_SOURCES}
 )
 
 # Link Unity

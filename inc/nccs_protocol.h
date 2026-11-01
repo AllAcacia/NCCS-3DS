@@ -1,30 +1,15 @@
 /*
- * Filename: nccs_protocol.h
+ * Filename: nccs_protocols.h
  * Author:   AllAcacia
  * 
  * MODULE INFO:
- * Handles the NCCS
- * protocol logic.
+ * Handles the protocol
+ * for NCCS.
  */
 
-
-#include <stdint.h>
 #include <stdbool.h>
-
-/* ------- Typedef NCCS Datatypes ------- */
-typedef int8_t s8;
-typedef uint8_t u8;
-typedef int16_t s16;
-typedef uint16_t u16;
-typedef int32_t s32;
-typedef uint32_t u32;
-typedef int64_t s64;
-typedef uint64_t u64;
-
-/* -------- Constant NCCS Macros -------- */
-#define NCCS_CLIENTS_MAX 15     // UDS supports 16 total "nodes" in a network.
-#define NCCS_MAIN_RCVBUF_BUFSIZE_MAX 0x5C6
-#define NCCS_WINDOW_SEG_MAX 16
+#include "nccs.h"
+#include "nccs_port.h"
 
 /*
                     NCCS Common Network Header
@@ -89,10 +74,10 @@ typedef enum {
 
 
 typedef struct {
-    u16 seg_size;                             // segment size in bytes, per packet pull function
-    u32 seqno;                                // sequence number
-    u8 seg_buf[NCCS_MAIN_RCVBUF_BUFSIZE_MAX]; // segment buffer
-    NCCS_RxState state;                       // segment "state"
+    u16 seg_size;                     // segment size in bytes, per packet pull function
+    u32 seqno;                        // sequence number
+    u8 seg_buf[NCCS_SEGMENT_MAXSIZE]; // segment buffer
+    NCCS_RxState state;               // segment "state"
 } NCCS_RxWindowSlot;
 
 
@@ -101,7 +86,7 @@ typedef struct {
     u8 rx_base_index;  // index to first item in sliding window
     u32 rx_base_seqno; // current lowest seqno in sliding window
     u32 rx_expected_seqno;
-    NCCS_RxWindowSlot rx_window[NCCS_WINDOW_SEG_MAX];
+    NCCS_RxWindowSlot rx_window[NCCS_WINDOW_MAXSIZE];
 } NCCS_RxSlidingWindow;
 
 
@@ -114,10 +99,10 @@ typedef enum {
 
 
 typedef struct {
-    u16 seg_size;                             // segment size in bytes, per packet pull function
-    u32 seqno;                                // sequence number
-    u8 seg_buf[NCCS_MAIN_RCVBUF_BUFSIZE_MAX]; // segment buffer
-    NCCS_TxState state;                       // segment "state"
+    u16 seg_size;                     // segment size in bytes, per packet pull function
+    u32 seqno;                        // sequence number
+    u8 seg_buf[NCCS_SEGMENT_MAXSIZE]; // segment buffer
+    NCCS_TxState state;               // segment "state"
 
     u8 retries;
     u64 timestamp;
@@ -129,13 +114,14 @@ typedef struct {
     u8 tx_base_index;  // index to first item in sliding window
     u32 tx_base_seqno; // current lowest seqno in sliding window
     u32 tx_next_seqno;
-    NCCS_TxWindowSlot tx_window[NCCS_WINDOW_SEG_MAX];
+    NCCS_TxWindowSlot tx_window[NCCS_WINDOW_MAXSIZE];
 } NCCS_TxSlidingWindow;
 
 
 /* -------- NCCS Peer -------- */
 typedef enum {
-    CONN_CLOSED=0,    // initial
+    CONN_NULL=0,      // inactive/unused
+    CONN_CLOSED,      // initial
     CONN_LISTEN,      // passive open state
     CONN_SYN_RCVD,    // received a SYN, respond with SYN+ACK and wait for ACK
     CONN_SYN_SENT,    // for SYN sender, waiting for SYN+ACK after sending SYN
@@ -146,7 +132,7 @@ typedef enum {
     CONN_FIN_WAIT_2,  // for the closing initiator, when we receive ACK from our previous FIN
     CONN_CLOSING,     // for simultaneous close?
     CONN_TIME_WAIT    // temporary state for when you want to make sure both sides of conn have no objections before closing
-} NCCS_ConnState; // Taken from TCP state machine
+} NCCS_ConnState;     // Taken from TCP state machine
 
 
 typedef struct {
@@ -154,16 +140,56 @@ typedef struct {
     NCCS_ConnState conn_state;
 
     u32 comm_id;       // WLAN CommID is determined on a per-console basis to be unique
-    u16 node_id;       // NodeID is determined through the network
+    s8 node_id;        // NodeID is determined through the network
     
     u16 usr_utf16[11]; // UTF-16 encoded username
-    u8 usr_utf8[11]; // UTF-8 encoded username
+    u8 usr_utf8[11];   // UTF-8 encoded username
 
     NCCS_TxSlidingWindow tx_slots;
     NCCS_RxSlidingWindow rx_slots;
-} NCCS_NetworkPeer;
+} NCCS_ClientProfile;
 
 
+// Central states...
+typedef enum {
+    NW_DISCONNECTED=0,
+    NW_ISCONNECTED,
+    NW_SEARCHING
+} NCCS_NetworkState;
+
+
+typedef struct {
+    u32 comm_id;       // WLAN CommID is determined on a per-console basis to be unique
+    s8 node_id;        // NodeID is determined through the network
+
+    u16 usr_utf16[11]; // UTF-16 encoded username
+    u8 usr_utf8[11];   // UTF-8 encoded username
+} NCCS_CentralProfile;
+
+
+// Other NCCS datatypes...
+typedef struct NCCS_NetworkInfo_ {
+    NCCS_NetworkState conn_state;
+
+    u8 host_macaddress[6];
+    u8 channel;
+    u8 oui_value[3];
+    u8 oui_type;
+    u32 wlancommID;
+    u8 id8;
+    u16 attributes;
+    u32 networkID;
+    u8 total_nodes;
+    u8 max_nodes;
+    u8 appdata_size;
+    u8 appdata[0xc8];
+} NCCS_NetworkInfo;
+
+
+/* -------- NCCS Packet Functions --------- */
+s16 NCCS_Init(size_t sharedmem_size, const char* username);
+
+void NCCS_Exit(void);
 
 s16 NCCS_CalcWindowIndex(u32 query_seqno, u32 base_seqno, u8 base_index, u8 window_size);
 
@@ -172,18 +198,6 @@ s16 NCCS_CalcRxWindowIndex(NCCS_RxSlidingWindow* window, u32 query_seqno);
 s16 NCCS_CalcTxWindowIndex(NCCS_TxSlidingWindow* window, u32 query_seqno);
 
 int NCCS_CalcChecksum(const void* segment, size_t seg_size, u16* checksum);
-
-u8 NCCS_GetBE1b(const void* segment, size_t byte_offset, u8 bit_n);
-
-int NCCS_SetBE1b(void* segment, size_t byte_offset, u8 bit_n, u8 val);
-
-u16 NCCS_GetBE16b(const void* segment, size_t offset);
-
-void NCCS_SetBE16b(void* segment, size_t offset, u16 val);
-
-u32 NCCS_GetBE32b(const void* segment, size_t offset);
-
-void NCCS_SetBE32b(void* segment, size_t offset, u32 val);
 
 u32 NCCS_GetAppID(const void* segment);
 
