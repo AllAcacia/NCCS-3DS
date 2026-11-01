@@ -12,13 +12,12 @@
 
 
 static NCCS_ClientProfile* NETCORE_CLIENTS; // pointer to dynamically allocated space for peer data
-static u8 NCCS_MAIN_RCVBUF[NCCS_SEGMENT_MAXSIZE]; // intermediate receiving buffer, memcpy'd into peer data buffer after
 
 static u32 USR_WLANCOMM_ID = 0; // Unique User ID
 static u32 APPLICATION_ID = 0;  // Application ID
 
 static bool CONNECTED_TO_NETWORK = false; // are we in a network?
-static NCCS_NetworkInfo NETWORK_DATA;     // NCCS network struct
+static NCCS_NetworkStruct* NETWORK_DATA;  // NCCS network struct
 static u16 NETWORK_NODE_ID = 0;           // OUR node ID in the currently connected network, init 0
 static u8 SESSION_CLIENTS_MAX = 0;        // how many nodes do we want to support? Kick out any extra ones
 
@@ -65,7 +64,7 @@ int NetCORE_CalculateWlanCommID(void)
     u64 console_hash;
 
 	// We will get a u64 hash by stirring in our "app ID" (supposedly unique for every console)
-	NetCORE_GenHashConsoleUnique(APPLICATION_ID, &console_hash);
+	NCCS_GenHashConsoleUnique(APPLICATION_ID, &console_hash);
 
 	// Take every even order bit, and squash it into a u32 Wlan ID
 	for (size_t i=0; i < 32; i += 1) {
@@ -95,7 +94,7 @@ bool NetCORE_GetIsInNetwork(void)
 
 u32 NetCORE_GetConnNetworkID(void)
 {
-	return NETWORK_DATA.networkID;
+	return NCCS_NWStruct_GetNWID(NETWORK_DATA);
 }
 
 

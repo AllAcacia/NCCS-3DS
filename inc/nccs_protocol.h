@@ -172,25 +172,6 @@ typedef struct {
 } NCCS_CentralProfile;
 
 
-// Other NCCS datatypes...
-typedef struct NCCS_NetworkInfo_ {
-    NCCS_NetworkState conn_state;
-
-    u8 host_macaddress[6];
-    u8 channel;
-    u8 oui_value[3];
-    u8 oui_type;
-    u32 wlancommID;
-    u8 id8;
-    u16 attributes;
-    u32 networkID;
-    u8 total_nodes;
-    u8 max_nodes;
-    u8 appdata_size;
-    u8 appdata[0xc8];
-} NCCS_NetworkInfo;
-
-
 /* -------- NCCS Packet Functions --------- */
 s16 NCCS_Init(size_t sharedmem_size, const char* username);
 

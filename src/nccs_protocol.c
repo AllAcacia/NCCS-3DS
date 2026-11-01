@@ -11,7 +11,7 @@ static NCCS_ClientProfile peer_prof[NCCS_CLIENTS_MAX];
 
 s16 NCCS_Init(size_t sharedmem_size, const char* username)
 {
-	memset(peer_prof, 0, sizeof(NCCS_ClientProfile)*NCCS_CLIENTS_MAX);
+	memset(peer_prof, 0, sizeof(peer_prof));
 	NCCS_Init_Port(sharedmem_size, username);
 
 	return EXIT_SUCCESS;

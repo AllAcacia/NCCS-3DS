@@ -43,6 +43,4 @@ u32 NetCORE_GetConnNetworkID(void);
 
 u16 NetCORE_GetConnNodeID(void);
 
-void NetCORE_Print_ConnStatus(void);
-
 #endif // NETCORE_H

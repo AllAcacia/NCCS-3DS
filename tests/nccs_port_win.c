@@ -25,11 +25,25 @@ void NCCS_Exit_Port(void)
 }
 
 
-s16 NetCORE_GenHashConsoleUnique(u32 appIDSalt, u64 *hash)
+u32 NCCS_NWStruct_GetNWID(const NCCS_NetworkStruct* info)
 {
-    time_t timestamp;
-    time(&timestamp);
-    *hash = timestamp;
-    
+    return 0;
+}
+
+
+s16 NCCS_GenHashConsoleUnique(u32 appIDSalt, u64 *hash)
+{
+    if (hash == NULL)
+        return EXIT_FAILURE;
+
+    struct timespec ts;
+
+    if (timespec_get(&ts, TIME_UTC) != TIME_UTC)
+        return EXIT_FAILURE;
+
+    *hash = ((u64)ts.tv_sec << 32)
+          ^ (u64)ts.tv_nsec
+          ^ (u64)appIDSalt;
+
     return EXIT_SUCCESS;
 }
