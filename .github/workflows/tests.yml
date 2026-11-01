@@ -1,9 +1,25 @@
 # .YML config file created with AI assistance
 # for ease of test automation.
 
+
+name: NCCS Unit Tests
+
+"on":
+  push:
+    branches:
+      - main
+      - master
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+  workflow_dispatch:
+
 jobs:
   test:
-    name: Build and Test NCCS-3DS
+    name: Build and Test NCCS
     runs-on: ubuntu-latest
 
     steps:
@@ -23,10 +39,7 @@ jobs:
             -DCMAKE_C_COMPILER=gcc
 
       - name: Build unit tests
-        run: |
-          cmake --build build-tests --parallel
+        run: cmake --build build-tests --parallel
 
       - name: Run unit tests
-        run: |
-          ctest --test-dir build-tests \
-            --output-on-failure
+        run: ctest --test-dir build-tests --output-on-failure
